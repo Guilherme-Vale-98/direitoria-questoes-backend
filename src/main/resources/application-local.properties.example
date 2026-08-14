@@ -1,0 +1,11 @@
+# Template for local DB credentials. Copy to `application-local.properties`
+# (same folder) and fill in your real values — that file is gitignored.
+#
+# Run with the local profile:
+#   ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+
+spring.datasource.username=seu_usuario
+spring.datasource.password=sua_senha
+
+# Only needed if your Postgres isn't at the default host/port/db:
+# spring.datasource.url=jdbc:postgresql://localhost:5434/direitoria-questoes
