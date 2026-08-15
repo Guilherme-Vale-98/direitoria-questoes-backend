@@ -1,0 +1,12 @@
+# Keep the build context small and, more importantly, keep secrets out of it.
+target/
+.git/
+.idea/
+*.iml
+
+# NEVER ship local secrets into an image layer. This file holds the real DB
+# password and JWT secret; on Render those come from environment variables.
+src/main/resources/application-local.properties
+
+HELP.md
+.gitattributes

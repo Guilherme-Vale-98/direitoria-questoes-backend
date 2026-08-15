@@ -1,0 +1,48 @@
+# Render blueprint for the Direitoria API (https://render.com).
+# `backend/questoes/` is its own git repo, so this file sits at ITS root.
+#
+# BEFORE THE FIRST DEPLOY, read DEPLOY-RENDER.md. The app runs Hibernate with
+# ddl-auto=validate — Drizzle owns the schema — so it will REFUSE TO START
+# against an empty database. Migrations must be applied first, and they live in
+# a different repo (the root Node project).
+
+databases:
+  - name: direitoria-db
+    databaseName: direitoria_questoes
+    plan: free
+
+services:
+  - type: web
+    name: direitoria-api
+    runtime: docker
+    plan: free
+    # Free instances sleep when idle; a JVM cold start is slow (tens of seconds).
+    # Move to a paid instance before putting this in front of real students.
+    healthCheckPath: /api/subjects
+    envVars:
+      # Wired automatically from the managed database above.
+      - key: DB_HOST
+        fromDatabase:
+          name: direitoria-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: direitoria-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: direitoria-db
+          property: database
+      - key: DB_USERNAME
+        fromDatabase:
+          name: direitoria-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: direitoria-db
+          property: password
+
+      # Render generates this once and keeps it. Rotating it invalidates every
+      # issued access token, which is the intended behaviour for a secret leak.
+      - key: JWT_SECRET
+        generateValue: true
