@@ -2,6 +2,7 @@ package com.direitoria.questoes;
 
 import com.direitoria.questoes.domain.ExamBoard;
 import com.direitoria.questoes.repository.ExamBoardRepository;
+import tools.jackson.databind.ObjectMapper;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,18 @@ class QuestionControllerTest {
     @Autowired MockMvc mockMvc;
     @Autowired ExamBoardRepository examBoards;
     @Autowired JdbcTemplate jdbc;
+    @Autowired ObjectMapper json;
+
+    private String accessToken() throws Exception {
+        String email = "qc_" + UUID.randomUUID() + "@x.com";
+        mockMvc.perform(post("/api/auth/register").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"firstName\":\"A\",\"lastName\":\"B\",\"email\":\"" + email
+                        + "\",\"password\":\"secret\"}")).andExpect(status().isCreated());
+        String res = mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + email + "\",\"password\":\"secret\"}"))
+                .andReturn().getResponse().getContentAsString();
+        return json.readTree(res).get("accessToken").asText();
+    }
 
     private UUID insert(String src, String tipo, Integer bancaId) {
         UUID id = UUID.randomUUID();
@@ -107,7 +120,9 @@ class QuestionControllerTest {
     @Test
     void answerMultiplaEscolhaCorrectRevealsGabaritoAndComentario() throws Exception {
         UUID id = insertMc("m1", "A", "Porque A é a correta");
-        mockMvc.perform(post("/api/questions/{id}/answer", id).contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/questions/{id}/answer", id)
+                        .header("Authorization", "Bearer " + accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"chosenAnswer\":\"A\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.correct").value(true))
@@ -118,7 +133,9 @@ class QuestionControllerTest {
     @Test
     void answerMultiplaEscolhaWrong() throws Exception {
         UUID id = insertMc("m2", "A", null);
-        mockMvc.perform(post("/api/questions/{id}/answer", id).contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/questions/{id}/answer", id)
+                        .header("Authorization", "Bearer " + accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"chosenAnswer\":\"B\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.correct").value(false))
@@ -128,7 +145,9 @@ class QuestionControllerTest {
     @Test
     void answerCertoErrado() throws Exception {
         UUID id = insertCe("c1", "CERTO");
-        mockMvc.perform(post("/api/questions/{id}/answer", id).contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/questions/{id}/answer", id)
+                        .header("Authorization", "Bearer " + accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"chosenAnswer\":\"Certo\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.correct").value(true))
@@ -138,14 +157,18 @@ class QuestionControllerTest {
     @Test
     void answerRejectsInvalidAlternativeWith400() throws Exception {
         UUID id = insertMc("m3", "A", null);
-        mockMvc.perform(post("/api/questions/{id}/answer", id).contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/questions/{id}/answer", id)
+                        .header("Authorization", "Bearer " + accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"chosenAnswer\":\"Z\"}"))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
     void answerReturns404ForUnknownQuestion() throws Exception {
-        mockMvc.perform(post("/api/questions/{id}/answer", UUID.randomUUID()).contentType(MediaType.APPLICATION_JSON)
+        mockMvc.perform(post("/api/questions/{id}/answer", UUID.randomUUID())
+                        .header("Authorization", "Bearer " + accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"chosenAnswer\":\"A\"}"))
                 .andExpect(status().isNotFound());
     }
@@ -157,6 +180,7 @@ class QuestionControllerTest {
         mockMvc.perform(get("/api/questions").param("size", "20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].answer").doesNotExist())
-                .andExpect(jsonPath("$.content[0].commentary").doesNotExist());
+                .andExpect(jsonPath("$.content[0].commentary").doesNotExist())
+                .andExpect(jsonPath("$.content[0].sourceId").doesNotExist());
     }
 }

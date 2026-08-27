@@ -159,5 +159,20 @@ ALTER TABLE "refresh_tokens" ADD CONSTRAINT "refresh_tokens_user_id_users_id_fk"
 CREATE INDEX "idx_refresh_user" ON "refresh_tokens" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "idx_refresh_family" ON "refresh_tokens" USING btree ("family_id");
 
+-- ===== 0005_orange_blur.sql =====
+CREATE TABLE "question_attempt" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" uuid NOT NULL,
+	"question_source_id" text NOT NULL,
+	"chosen_answer" text NOT NULL,
+	"is_correct" boolean NOT NULL,
+	"answered_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "question_attempt" ADD CONSTRAINT "question_attempt_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "question_attempt" ADD CONSTRAINT "question_attempt_question_source_id_questao_source_id_fk" FOREIGN KEY ("question_source_id") REFERENCES "public"."questao"("source_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "idx_attempt_user_question_time" ON "question_attempt" USING btree ("user_id","question_source_id","answered_at");--> statement-breakpoint
+CREATE INDEX "idx_attempt_user_time" ON "question_attempt" USING btree ("user_id","answered_at");
+
 -- ===== test seed (roles) =====
 INSERT INTO roles (authority) VALUES ('USER'), ('ADMIN') ON CONFLICT (authority) DO NOTHING;

@@ -48,7 +48,7 @@ class QuestionServiceTest {
 
         Page<QuestionResponse> onlyFgvMc = service.search(
                 null, fgv.getId(), null, null, QuestionType.MULTIPLA_ESCOLHA, null, null,
-                PageRequest.of(0, 20));
+                null, null, PageRequest.of(0, 20));
         assertEquals(1, onlyFgvMc.getTotalElements());
         assertEquals("FGV", onlyFgvMc.getContent().get(0).examBoard().name());
         assertEquals("MULTIPLA_ESCOLHA", onlyFgvMc.getContent().get(0).type());
@@ -64,7 +64,7 @@ class QuestionServiceTest {
                 "q1", penal.getId());
 
         Page<QuestionResponse> byPenal = service.search(
-                penal.getId(), null, null, null, null, null, null, PageRequest.of(0, 20));
+                penal.getId(), null, null, null, null, null, null, null, null, PageRequest.of(0, 20));
         assertEquals(1, byPenal.getTotalElements());
     }
 
@@ -80,7 +80,7 @@ class QuestionServiceTest {
                 "q1", penal.getId(), "q1", processual.getId());
 
         Page<QuestionResponse> byPenal = service.search(
-                penal.getId(), null, null, null, null, null, null, PageRequest.of(0, 20));
+                penal.getId(), null, null, null, null, null, null, null, null, PageRequest.of(0, 20));
         assertEquals(1, byPenal.getTotalElements());
         assertEquals(1, byPenal.getContent().size());
     }
@@ -92,7 +92,7 @@ class QuestionServiceTest {
         insertQuestion("q2", "CERTO_ERRADO", "FGV", fgv.getId(), (short) 2021);
 
         Page<QuestionResponse> all = service.search(
-                null, null, null, null, null, null, null, PageRequest.of(0, 20));
+                null, null, null, null, null, null, null, null, null, PageRequest.of(0, 20));
         assertEquals(2, all.getTotalElements());
     }
 
@@ -107,7 +107,7 @@ class QuestionServiceTest {
         insertQuestion("s2", "MULTIPLA_ESCOLHA", "FGV", fgv.getId(), (short) 2024);
 
         Page<QuestionResponse> hit = service.search(
-                null, null, null, null, null, null, "legalidade", PageRequest.of(0, 20));
+                null, null, null, null, null, null, "legalidade", null, null, PageRequest.of(0, 20));
         assertEquals(1, hit.getTotalElements());
         assertEquals("Sobre o princípio da LEGALIDADE penal", hit.getContent().get(0).statement());
     }

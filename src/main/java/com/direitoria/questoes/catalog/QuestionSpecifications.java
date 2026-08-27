@@ -3,6 +3,7 @@ package com.direitoria.questoes.catalog;
 import com.direitoria.questoes.domain.Difficulty;
 import com.direitoria.questoes.domain.Question;
 import com.direitoria.questoes.domain.QuestionType;
+import java.util.List;
 import org.springframework.data.jpa.domain.Specification;
 
 public final class QuestionSpecifications {
@@ -17,7 +18,9 @@ public final class QuestionSpecifications {
             Short year,
             QuestionType type,
             Difficulty difficulty,
-            String search) {
+            String search,
+            List<String> historySourceIds,
+            boolean historyExcludes) {
         return Specification.allOf(
                 hasSubject(subjectId),
                 hasExamBoard(examBoardId),
@@ -25,7 +28,8 @@ public final class QuestionSpecifications {
                 hasYear(year),
                 hasType(type),
                 hasDifficulty(difficulty),
-                matchesSearch(search));
+                matchesSearch(search),
+                matchesHistory(historySourceIds, historyExcludes));
     }
 
     private static Specification<Question> hasSubject(Integer subjectId) {
@@ -69,6 +73,29 @@ public final class QuestionSpecifications {
                 return null;
             }
             return cb.like(cb.lower(root.get("enunciado")), "%" + search.toLowerCase() + "%");
+        };
+    }
+
+    /**
+     * `historySourceIds == null` means no history filter at all — the endpoint stays
+     * exactly as it was.
+     *
+     * An EMPTY list is meaningful and must not be confused with null: for
+     * `correct`/`wrong` it means "the student has none", so nothing matches; for
+     * `unanswered` (excludes = true) it means "the student answered nothing", so
+     * everything matches.
+     */
+    private static Specification<Question> matchesHistory(
+            List<String> historySourceIds, boolean historyExcludes) {
+        return (root, query, cb) -> {
+            if (historySourceIds == null) {
+                return null;
+            }
+            if (historySourceIds.isEmpty()) {
+                return historyExcludes ? cb.conjunction() : cb.disjunction();
+            }
+            var in = root.get("sourceId").in(historySourceIds);
+            return historyExcludes ? cb.not(in) : in;
         };
     }
 }

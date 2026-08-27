@@ -82,6 +82,15 @@ public class Question {
         return publicId;
     }
 
+    /**
+     * The internal catalog key. Needed to record a tentativa against this questão.
+     * MUST NOT reach any DTO — QuestionMapper does not read it, and
+     * QuestionControllerTest asserts it never appears in a response.
+     */
+    public String getSourceId() {
+        return sourceId;
+    }
+
     public QuestionType getTipo() {
         return tipo;
     }
