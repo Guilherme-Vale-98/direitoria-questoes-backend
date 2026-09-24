@@ -2,6 +2,8 @@ package com.direitoria.questoes.catalog;
 
 import com.direitoria.questoes.domain.Difficulty;
 import com.direitoria.questoes.domain.Question;
+import com.direitoria.questoes.domain.QuestionAsset;
+import com.direitoria.questoes.dto.AssetDto;
 import com.direitoria.questoes.dto.OptionDto;
 import com.direitoria.questoes.dto.QuestionResponse;
 import java.util.ArrayList;
@@ -24,7 +26,41 @@ public final class QuestionMapper {
                 q.getExamBoard() == null ? null : LookupMapper.toLookup(q.getExamBoard()),
                 q.getAgency() == null ? null : LookupMapper.toLookup(q.getAgency()),
                 q.getCargo(),
-                q.getAno());
+                q.getAno(),
+                referenceTextFor(q),
+                buildAssets(q));
+    }
+
+    /**
+     * Reference text that merely repeats the enunciado is noise, not context: the
+     * student would read the same paragraph twice, once in the quoted block and
+     * again in the question. 60 of the catalog's 119 values are like this — 40
+     * identical, 20 already quoted inline. Compared normalized for whitespace and
+     * case, because the duplication is rarely byte-exact.
+     */
+    private static String referenceTextFor(Question q) {
+        String texto = q.getTextoRef();
+        if (texto == null || texto.isBlank()) {
+            return null;
+        }
+        return normalize(q.getEnunciado()).contains(normalize(texto)) ? null : texto;
+    }
+
+    private static String normalize(String s) {
+        return s == null ? "" : s.replaceAll("\\s+", " ").trim().toLowerCase();
+    }
+
+    private static List<AssetDto> buildAssets(Question q) {
+        List<QuestionAsset> assets = q.getAssets();
+        if (assets == null) {
+            return List.of();
+        }
+        return assets.stream()
+                .map(a -> new AssetDto(
+                        a.getOrdem(),
+                        "/api/questions/" + q.getPublicId() + "/assets/" + a.getOrdem(),
+                        a.getContentType()))
+                .toList();
     }
 
     private static List<OptionDto> buildOptions(Question q) {

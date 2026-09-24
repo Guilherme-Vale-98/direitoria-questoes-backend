@@ -174,5 +174,55 @@ ALTER TABLE "question_attempt" ADD CONSTRAINT "question_attempt_question_source_
 CREATE INDEX "idx_attempt_user_question_time" ON "question_attempt" USING btree ("user_id","question_source_id","answered_at");--> statement-breakpoint
 CREATE INDEX "idx_attempt_user_time" ON "question_attempt" USING btree ("user_id","answered_at");
 
+-- ===== 0006_questao_asset.sql =====
+CREATE TABLE "questao_asset" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"source_id" text NOT NULL,
+	"ordem" smallint NOT NULL,
+	"content_type" text NOT NULL,
+	"bytes" "bytea" NOT NULL,
+	"origem_url" text NOT NULL,
+	"baixado_em" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+ALTER TABLE "questao_asset" ADD CONSTRAINT "questao_asset_source_id_questao_source_id_fk" FOREIGN KEY ("source_id") REFERENCES "public"."questao"("source_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "uq_questao_asset_source_ordem" ON "questao_asset" USING btree ("source_id","ordem");
+
+-- ===== 0007_texto_ref_cleanup.sql =====
+-- Data fix, not DDL. 154 rows hold an unresolved QAPI reference code ("QTXT966262",
+-- "QRT", "9") in texto_ref instead of the passage. mapRaw stored the `texto` field
+-- verbatim without dereferencing it, and QAPI was suspended on 2026-09-22, so these
+-- can never be resolved. Rendering them would show a student a reference code as
+-- their reading passage. Prose always contains whitespace; a code never does.
+UPDATE questao
+SET texto_ref = NULL
+WHERE texto_ref IS NOT NULL
+  AND (btrim(texto_ref) !~ '[[:space:]]' OR length(btrim(texto_ref)) < 20);
+
+-- ===== 0008_prova_crawler.sql =====
+CREATE TABLE "prova" (
+	"id" text PRIMARY KEY NOT NULL,
+	"banca" text NOT NULL,
+	"orgao" text NOT NULL,
+	"cargo" text NOT NULL,
+	"ano" smallint NOT NULL,
+	"alternative_type" text NOT NULL,
+	"total_questoes" smallint NOT NULL,
+	"descoberta_em" timestamp with time zone DEFAULT now() NOT NULL,
+	"fetched_at" timestamp with time zone,
+	"kept_count" smallint,
+	"skipped_reason" text
+);
+--> statement-breakpoint
+CREATE TABLE "prova_questao_link" (
+	"prova_id" text NOT NULL,
+	"quest_question_id" text NOT NULL,
+	CONSTRAINT "prova_questao_link_prova_id_quest_question_id_pk" PRIMARY KEY("prova_id","quest_question_id")
+);
+--> statement-breakpoint
+CREATE INDEX "idx_prova_frontier" ON "prova" USING btree ("fetched_at");--> statement-breakpoint
+CREATE INDEX "idx_prova_ordem" ON "prova" USING btree ("ano","banca");--> statement-breakpoint
+CREATE INDEX "idx_pql_questao" ON "prova_questao_link" USING btree ("quest_question_id");
+
 -- ===== test seed (roles) =====
 INSERT INTO roles (authority) VALUES ('USER'), ('ADMIN') ON CONFLICT (authority) DO NOTHING;

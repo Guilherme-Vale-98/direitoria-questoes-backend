@@ -8,6 +8,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.util.List;
 import java.util.UUID;
@@ -67,6 +69,15 @@ public class Question {
 
     @Column(name = "comentario")
     private String comentario;
+
+    /** The reading passage this questão depends on. Null for most rows. */
+    @Column(name = "texto_ref")
+    private String textoRef;
+
+    @OneToMany(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_id", referencedColumnName = "source_id")
+    @OrderBy("ordem ASC")
+    private List<QuestionAsset> assets;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -145,6 +156,14 @@ public class Question {
 
     public String getComentario() {
         return comentario;
+    }
+
+    public String getTextoRef() {
+        return textoRef;
+    }
+
+    public List<QuestionAsset> getAssets() {
+        return assets;
     }
 
     public List<Subject> getSubjects() {

@@ -13,5 +13,7 @@ public record QuestionResponse(
         LookupResponse examBoard,
         LookupResponse agency,
         String role,
-        Short year) {
+        Short year,
+        String referenceText,
+        List<AssetDto> assets) {
 }
