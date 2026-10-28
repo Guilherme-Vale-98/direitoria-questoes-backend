@@ -1,6 +1,7 @@
 package com.direitoria.questoes.catalog;
 
 import com.direitoria.questoes.domain.Difficulty;
+import com.direitoria.questoes.domain.Judging;
 import com.direitoria.questoes.domain.Question;
 import com.direitoria.questoes.domain.QuestionType;
 import com.direitoria.questoes.dto.AnswerResult;
@@ -91,7 +92,7 @@ public class QuestionService {
         return repository.findByPublicId(publicId).map(q -> {
             AnswerResult result = judge(q, chosenAnswer);
             try {
-                attempts.record(userId, q.getSourceId(), normalize(chosenAnswer), result.correct());
+                attempts.record(userId, q.getSourceId(), Judging.normalize(chosenAnswer), result.correct());
             } catch (RuntimeException e) {
                 // Silent to the student, loud here: a dropped tentativa costs a
                 // statistic, never a verdict.
@@ -102,12 +103,11 @@ public class QuestionService {
     }
 
     private static AnswerResult judge(Question q, String chosenAnswer) {
-        String chosen = normalize(chosenAnswer);
+        String chosen = Judging.normalize(chosenAnswer);
         if (!validTokens(q).contains(chosen)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Alternativa inválida");
         }
-        boolean correct = chosen.equals(normalize(q.getGabarito()));
-        return new AnswerResult(correct, q.getGabarito(), q.getComentario());
+        return new AnswerResult(Judging.isCorrect(chosen, q.getGabarito()), q.getGabarito(), q.getComentario());
     }
 
     /** Valid answer tokens: CERTO/ERRADO for true-false, else the labels of the present options. */
@@ -122,9 +122,5 @@ public class QuestionService {
         if (q.getOpcaoD() != null) tokens.add("D");
         if (q.getOpcaoE() != null) tokens.add("E");
         return tokens;
-    }
-
-    private static String normalize(String s) {
-        return s == null ? "" : s.trim().toUpperCase();
     }
 }

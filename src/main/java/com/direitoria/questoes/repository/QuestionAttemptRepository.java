@@ -129,4 +129,20 @@ public interface QuestionAttemptRepository extends JpaRepository<QuestionAttempt
             SELECT DISTINCT question_source_id FROM question_attempt WHERE user_id = :userId
             """, nativeQuery = true)
     List<String> answeredSourceIds(@Param("userId") UUID userId);
+
+    interface AttemptCounts {
+        long getAttempts();
+        long getStudents();
+    }
+
+    /** Every tentativa on one questão, and how many distinct students made them. Drives the edit banner and the re-judge confirmation. */
+    @Query(value = """
+            SELECT count(*) AS attempts, count(DISTINCT user_id) AS students
+            FROM question_attempt
+            WHERE question_source_id = :sourceId
+            """, nativeQuery = true)
+    AttemptCounts countsFor(@Param("sourceId") String sourceId);
+
+    /** Every tentativa on one questão — only re-judging reads them all (docs/adr/0009). */
+    List<QuestionAttempt> findByQuestionSourceId(String questionSourceId);
 }

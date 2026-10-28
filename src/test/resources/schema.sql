@@ -224,5 +224,50 @@ CREATE INDEX "idx_prova_frontier" ON "prova" USING btree ("fetched_at");--> stat
 CREATE INDEX "idx_prova_ordem" ON "prova" USING btree ("ano","banca");--> statement-breakpoint
 CREATE INDEX "idx_pql_questao" ON "prova_questao_link" USING btree ("quest_question_id");
 
+-- ===== 0009_importacao.sql =====
+CREATE TABLE "importacao" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"file_name" text NOT NULL,
+	"tipo" "tipo_questao" NOT NULL,
+	"page_count" smallint NOT NULL,
+	"pdf" "bytea" NOT NULL,
+	"gabarito" jsonb,
+	"gabarito_sections" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"exam_board" jsonb,
+	"agency" jsonb,
+	"year" smallint,
+	"role" text,
+	"subject_ranges" jsonb DEFAULT '[]'::jsonb NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "importacao_imagem" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"importacao_id" uuid NOT NULL,
+	"numero" smallint NOT NULL,
+	"ordem" smallint NOT NULL,
+	"content_type" text NOT NULL,
+	"bytes" "bytea" NOT NULL,
+	"origem" text NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "importacao_questao" (
+	"importacao_id" uuid NOT NULL,
+	"numero" smallint NOT NULL,
+	"included" boolean DEFAULT true NOT NULL,
+	"draft" jsonb NOT NULL,
+	"crop" jsonb NOT NULL,
+	"flags" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"duplicate_of_id" uuid,
+	"duplicate_of_numero" smallint,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "importacao_questao_importacao_id_numero_pk" PRIMARY KEY("importacao_id","numero")
+);
+--> statement-breakpoint
+ALTER TABLE "importacao_imagem" ADD CONSTRAINT "importacao_imagem_questao_fk" FOREIGN KEY ("importacao_id","numero") REFERENCES "public"."importacao_questao"("importacao_id","numero") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "importacao_questao" ADD CONSTRAINT "importacao_questao_importacao_id_importacao_id_fk" FOREIGN KEY ("importacao_id") REFERENCES "public"."importacao"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "uq_importacao_imagem_ordem" ON "importacao_imagem" USING btree ("importacao_id","numero","ordem");
+
 -- ===== test seed (roles) =====
 INSERT INTO roles (authority) VALUES ('USER'), ('ADMIN') ON CONFLICT (authority) DO NOTHING;

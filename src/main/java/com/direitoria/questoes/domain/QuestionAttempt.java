@@ -9,9 +9,10 @@ import java.util.UUID;
 import org.hibernate.annotations.UuidGenerator;
 
 /**
- * One tentativa: a student's recorded submission against a questão, judged at the
- * moment it was made. Append-only — never updated, never deleted by the app.
- * See CONTEXT.md ("Tentativa") and docs/adr/0001.
+ * One tentativa: a student's recorded submission against a questão. Never deleted by
+ * the app, and the chosen alternativa never changes. Its verdict (is_correct) follows
+ * the questão's current gabarito: when an admin changes the gabarito, every tentativa
+ * on it is re-judged (docs/adr/0009). See CONTEXT.md ("Tentativa") and docs/adr/0001.
  */
 @Entity
 @Table(name = "question_attempt")
@@ -48,6 +49,19 @@ public class QuestionAttempt {
         this.questionSourceId = questionSourceId;
         this.chosenAnswer = chosenAnswer;
         this.correct = correct;
+    }
+
+    /**
+     * Re-derives the verdict from the questão's current gabarito, by the same rule the
+     * answer endpoint uses. The chosen alternativa is untouched (docs/adr/0009).
+     *
+     * @return true when the verdict flipped
+     */
+    public boolean rejudge(String gabarito) {
+        boolean now = Judging.isCorrect(chosenAnswer, gabarito);
+        boolean flipped = now != correct;
+        correct = now;
+        return flipped;
     }
 
     public UUID getId() {
